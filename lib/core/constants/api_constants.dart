@@ -1,13 +1,15 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class ApiConstants {
-  // Production Cloud Run API
-  static const String baseUrlProd =
+  // Base API URL from .env (fallback to Production Cloud Run)
+  static String get baseUrl =>
+      dotenv.env['API_BASE_URL'] ??
       'https://healthcare-ai-capstone-727342906224.asia-east1.run.app/api/v1';
 
-  // Local Development (10.0.2.2 for Android Emulator, localhost for iOS/Web)
-  static const String baseUrlLocal = 'http://10.0.2.2:3000/api/v1';
-
-  // Current active base URL (mặc định dùng Prod để test được ngay trên cả máy ảo & máy thật)
-  static const String baseUrl = baseUrlProd;
+  // Base Upload URL from .env
+  static String get uploadBaseUrl =>
+      dotenv.env['UPLOAD_BASE_URL'] ??
+      'https://storage.googleapis.com/healthcare-ai-uploads';
 
   // Endpoints
   static const String login = '/auth/login';
