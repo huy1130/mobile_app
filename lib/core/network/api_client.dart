@@ -54,11 +54,34 @@ class ApiClient {
     } catch (_) {}
   }
 
-  Future<void> saveUserInfo({required String name, required String email}) async {
+  Future<void> saveUserInfo({
+    String? userId,
+    required String name,
+    required String email,
+    String? phone,
+    String? avatar,
+  }) async {
     try {
+      if (userId != null && userId.isNotEmpty) {
+        await _storage.write(key: 'user_id', value: userId);
+      }
       await _storage.write(key: 'user_full_name', value: name);
       await _storage.write(key: 'user_email', value: email);
+      if (phone != null && phone.isNotEmpty) {
+        await _storage.write(key: 'user_phone', value: phone);
+      }
+      if (avatar != null && avatar.isNotEmpty) {
+        await _storage.write(key: 'user_avatar', value: avatar);
+      }
     } catch (_) {}
+  }
+
+  Future<String?> getUserId() async {
+    try {
+      return await _storage.read(key: 'user_id');
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String?> getUserFullName() async {
@@ -77,6 +100,22 @@ class ApiClient {
     }
   }
 
+  Future<String?> getUserPhone() async {
+    try {
+      return await _storage.read(key: 'user_phone');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<String?> getUserAvatar() async {
+    try {
+      return await _storage.read(key: 'user_avatar');
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<String?> getToken() async {
     try {
       return await _storage.read(key: 'access_token');
@@ -88,8 +127,11 @@ class ApiClient {
   Future<void> clearToken() async {
     try {
       await _storage.delete(key: 'access_token');
+      await _storage.delete(key: 'user_id');
       await _storage.delete(key: 'user_full_name');
       await _storage.delete(key: 'user_email');
+      await _storage.delete(key: 'user_phone');
+      await _storage.delete(key: 'user_avatar');
     } catch (_) {}
   }
 }

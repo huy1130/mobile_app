@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_logo.dart';
-
 import '../../../core/network/api_client.dart';
+import '../../auth/services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,9 +22,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadUserInfo() async {
     final name = await ApiClient().getUserFullName();
-    if (name != null && name.isNotEmpty && mounted) {
+    if (mounted) {
       setState(() {
-        _patientName = name;
+        if (name != null && name.isNotEmpty) _patientName = name;
+      });
+    }
+
+    final user = await AuthService().getMyProfile();
+    if (user != null && mounted) {
+      setState(() {
+        if (user.fullName.isNotEmpty) _patientName = user.fullName;
       });
     }
   }
@@ -54,15 +61,52 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 20),
 
-              // User Greeting
-              Text(
-                'Xin chào, 👋',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                _patientName,
-                style: Theme.of(context).textTheme.titleLarge,
+              // User Greeting with Avatar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Xin chào, 👋',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _patientName,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryLight,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppTheme.primary.withValues(alpha: 0.2),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        _patientName.trim().isNotEmpty
+                            ? _patientName.trim()[0].toUpperCase()
+                            : 'U',
+                        style: const TextStyle(
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
 

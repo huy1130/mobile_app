@@ -5,6 +5,7 @@ class AuthUser {
   final String actorRole;
   final String? phoneNumber;
   final String? avatarUrl;
+  final Map<String, dynamic>? additionalProfile;
 
   AuthUser({
     required this.userId,
@@ -13,6 +14,7 @@ class AuthUser {
     required this.actorRole,
     this.phoneNumber,
     this.avatarUrl,
+    this.additionalProfile,
   });
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,9 @@ class AuthUser {
       actorRole: json['actorRole'] ?? json['role'] ?? 'PATIENT',
       phoneNumber: json['phoneNumber'],
       avatarUrl: json['avatarUrl'],
+      additionalProfile: json['additionalProfile'] is Map<String, dynamic>
+          ? json['additionalProfile'] as Map<String, dynamic>
+          : null,
     );
   }
 
@@ -34,6 +39,7 @@ class AuthUser {
       'actorRole': actorRole,
       'phoneNumber': phoneNumber,
       'avatarUrl': avatarUrl,
+      if (additionalProfile != null) 'additionalProfile': additionalProfile,
     };
   }
 }

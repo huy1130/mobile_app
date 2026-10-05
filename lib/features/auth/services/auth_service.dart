@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/api_client.dart';
@@ -49,8 +50,11 @@ class AuthService {
 
       final user = AuthUser.fromJson(data['user'] ?? {});
       await _apiClient.saveUserInfo(
+        userId: user.userId,
         name: user.fullName,
         email: user.email,
+        phone: user.phoneNumber,
+        avatar: user.avatarUrl,
       );
 
       return user;
@@ -198,6 +202,53 @@ class AuthService {
     }
   }
 
+  // Lấy chi tiết hồ sơ người dùng hiện tại từ backend (GET /users/:userId)
+  Future<AuthUser?> getMyProfile() async {
+    try {
+      String? userId = await _apiClient.getUserId();
+      if (userId == null || userId.isEmpty) {
+        // Fallback: decode userId (sub) from stored JWT access token
+        final token = await _apiClient.getToken();
+        if (token != null && token.isNotEmpty) {
+          userId = _decodeUserIdFromToken(token);
+        }
+      }
+      if (userId == null || userId.isEmpty) return null;
+
+      final response = await _apiClient.dio.get('${ApiConstants.userDetail}/$userId');
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        final user = AuthUser.fromJson(data);
+        await _apiClient.saveUserInfo(
+          userId: user.userId,
+          name: user.fullName,
+          email: user.email,
+          phone: user.phoneNumber,
+          avatar: user.avatarUrl,
+        );
+        return user;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _decodeUserIdFromToken(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      final normalized = base64Url.normalize(parts[1]);
+      final payloadString = utf8.decode(base64Url.decode(normalized));
+      final Map<String, dynamic> payload = jsonDecode(payloadString);
+      return payload['sub'] as String? ??
+          payload['userId'] as String? ??
+          payload['id'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // Cập nhật profile người dùng hiện tại (PATCH /users/me)
   Future<AuthUser> updateMyProfile({
     String? fullName,
@@ -207,20 +258,41 @@ class AuthService {
     String? dateOfBirth,
   }) async {
     try {
+      final Map<String, dynamic> dataMap = {};
+      if (fullName != null) dataMap['fullName'] = fullName.trim();
+      if (phoneNumber != null) dataMap['phoneNumber'] = phoneNumber.trim();
+
+      final Map<String, dynamic> additionalProfile = {};
+      if (address != null && address.isNotEmpty) {
+        additionalProfile['address'] = address.trim();
+      }
+      if (gender != null && gender.isNotEmpty) {
+        additionalProfile['gender'] = gender;
+      }
+      if (dateOfBirth != null && dateOfBirth.isNotEmpty) {
+        additionalProfile['dateOfBirth'] = dateOfBirth;
+      }
+
+      if (additionalProfile.isNotEmpty) {
+        dataMap['additionalProfile'] = jsonEncode(additionalProfile);
+      }
+
+      final formData = FormData.fromMap(dataMap);
+
       final response = await _apiClient.dio.patch(
         ApiConstants.updateMyProfile,
-        data: {
-          if (fullName != null) 'fullName': fullName.trim(),
-          if (phoneNumber != null) 'phoneNumber': phoneNumber.trim(),
-          if (address != null) 'address': address.trim(),
-          'gender': ?gender,
-          'dateOfBirth': ?dateOfBirth,
-        },
+        data: formData,
       );
+
       final user = AuthUser.fromJson(response.data['user'] ?? response.data);
-      if (fullName != null) {
-        await _apiClient.saveUserInfo(name: user.fullName, email: user.email);
-      }
+      final currentUserId = await _apiClient.getUserId();
+      await _apiClient.saveUserInfo(
+        userId: user.userId.isNotEmpty ? user.userId : currentUserId,
+        name: user.fullName.isNotEmpty ? user.fullName : (fullName ?? ''),
+        email: user.email.isNotEmpty ? user.email : (await _apiClient.getUserEmail() ?? ''),
+        phone: user.phoneNumber ?? phoneNumber,
+        avatar: user.avatarUrl ?? await _apiClient.getUserAvatar(),
+      );
       return user;
     } catch (e) {
       throw Exception(_handleError(e));

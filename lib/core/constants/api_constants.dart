@@ -19,6 +19,17 @@ class ApiConstants {
     return 'https://storage.googleapis.com/healthcare-ai-uploads';
   }
 
+  // Resolve Full Avatar URL (matching Web getAvatarUrl)
+  static String getAvatarUrl(String? avatar) {
+    if (avatar == null || avatar.trim().isEmpty) return '';
+    final trimmed = avatar.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    final cleanPath = trimmed.startsWith('/') ? trimmed.substring(1) : trimmed;
+    return '$uploadBaseUrl/$cleanPath';
+  }
+
   // Auth Endpoints
   static const String login = '/auth/login';
   static const String register = '/auth/register';
