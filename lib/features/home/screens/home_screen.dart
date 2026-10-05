@@ -2,8 +2,32 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_logo.dart';
 
-class HomeScreen extends StatelessWidget {
+import '../../../core/network/api_client.dart';
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _patientName = 'Bệnh nhân';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    final name = await ApiClient().getUserFullName();
+    if (name != null && name.isNotEmpty && mounted) {
+      setState(() {
+        _patientName = name;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +61,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'Bệnh nhân Nguyễn Văn A',
+                _patientName,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 20),

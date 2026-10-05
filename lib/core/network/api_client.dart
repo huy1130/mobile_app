@@ -26,16 +26,20 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await _storage.read(key: 'access_token');
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
+          try {
+            final token = await _storage.read(key: 'access_token');
+            if (token != null && token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
+          } catch (_) {}
           return handler.next(options);
         },
         onError: (DioException error, handler) async {
           // Handle 401 Unauthorized (e.g. token expired)
           if (error.response?.statusCode == 401) {
-            await _storage.delete(key: 'access_token');
+            try {
+              await _storage.delete(key: 'access_token');
+            } catch (_) {}
           }
           return handler.next(error);
         },
@@ -45,14 +49,47 @@ class ApiClient {
 
   // Token Helpers
   Future<void> saveToken(String token) async {
-    await _storage.write(key: 'access_token', value: token);
+    try {
+      await _storage.write(key: 'access_token', value: token);
+    } catch (_) {}
+  }
+
+  Future<void> saveUserInfo({required String name, required String email}) async {
+    try {
+      await _storage.write(key: 'user_full_name', value: name);
+      await _storage.write(key: 'user_email', value: email);
+    } catch (_) {}
+  }
+
+  Future<String?> getUserFullName() async {
+    try {
+      return await _storage.read(key: 'user_full_name');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<String?> getUserEmail() async {
+    try {
+      return await _storage.read(key: 'user_email');
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String?> getToken() async {
-    return await _storage.read(key: 'access_token');
+    try {
+      return await _storage.read(key: 'access_token');
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> clearToken() async {
-    await _storage.delete(key: 'access_token');
+    try {
+      await _storage.delete(key: 'access_token');
+      await _storage.delete(key: 'user_full_name');
+      await _storage.delete(key: 'user_email');
+    } catch (_) {}
   }
 }
